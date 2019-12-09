@@ -3,8 +3,13 @@ package com.example.flutter_lottie;
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.view.View;
+import android.widget.ImageView;
+
 import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieDrawable;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
 import com.airbnb.lottie.value.LottieValueCallback;
@@ -18,7 +23,7 @@ import java.util.Map;
 public class LottieView implements PlatformView, MethodChannel.MethodCallHandler {
     private final Context mContext;
     private final int mId;
-    private final Object mArgs;
+    private final Map<String, Object> mArgs;
     private final Registrar mRegistrar;
     private final LottieAnimationView animationView;
 
@@ -26,7 +31,7 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
     private MethodChannel channel;
     private EventChannel.EventSink onPlaybackFinishEvent;
 
-    LottieView(Context context, int id, Object args, Registrar registrar) {
+    LottieView(Context context, int id, Map<String, Object> args, Registrar registrar) {
         super();
         mContext = context;
         mId = id;
@@ -34,12 +39,10 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
         mRegistrar = registrar;
         animationView = new LottieAnimationView(context);
 
-        Map<String, Object> params = (Map<String, Object>) args;
-        create(params);
-
+        create(args);
     }
 
-    void create(Map<String, Object> args) {
+    private void create(Map<String, Object> args) {
 
         channel = new MethodChannel(mRegistrar.messenger(), "convictiontech/flutter_lottie_" + mId);
         channel.setMethodCallHandler(this);
@@ -70,18 +73,32 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
 
         boolean loop, reverse, autoPlay;
 
-        loop = ((args.get("loop")) != null) ? Boolean.parseBoolean(args.get("loop").toString()) : false;
-        reverse = ((args.get("reverse")) != null) ? Boolean.parseBoolean(args.get("reverse").toString()) : false;
-        autoPlay = ((args.get("autoPlay")) != null) ? Boolean.parseBoolean(args.get("autoPlay").toString()) : false;
+        loop = ((args.get("loop")) != null) && Boolean.parseBoolean(args.get("loop").toString());
+        reverse = ((args.get("reverse")) != null) && Boolean.parseBoolean(args.get("reverse").toString());
+        autoPlay = ((args.get("autoPlay")) != null) && Boolean.parseBoolean(args.get("autoPlay").toString());
 
+        float scale = ((args.get("scale")) != null) ? ((Double) args.get("scale")).floatValue() : 1.0f;
+        float translateX = ((args.get("translateX")) != null) ? ((Double) args.get("translateX")).floatValue() : 0.0f;
+        float translateY = ((args.get("translateY")) != null) ? ((Double) args.get("translateY")).floatValue() : 0.0f;
+        ImageView.ScaleType scaleType = ((args.get("scaleType")) != null) ? ImageView.ScaleType.values()[Integer.parseInt(args.get("scaleType").toString())] : ImageView.ScaleType.FIT_CENTER;
+
+        // scale = 1.5f;
         animationView.setRepeatCount(loop ? -1 : 0);
+        animationView.setScale(scale);
+        animationView.setScaleType(scaleType);
+
+        if (scaleType == ImageView.ScaleType.MATRIX) {
+            Matrix m = animationView.getImageMatrix();
+            m.setTranslate(translateX * scale, translateY * scale);
+            animationView.setImageMatrix(m);
+        }
 
         maxFrame = animationView.getMaxFrame();
 
         if(reverse) {
-            animationView.setRepeatMode(2);
+            animationView.setRepeatMode(LottieDrawable.REVERSE);
         } else {
-            animationView.setRepeatMode(1);
+            animationView.setRepeatMode(LottieDrawable.RESTART);
         }
 
         if(autoPlay) {
@@ -165,7 +182,7 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
                 animationView.cancelAnimation();
                 animationView.setProgress(0.0f);
                 final int mode = animationView.getRepeatMode();
-                animationView.setRepeatMode(1);
+                animationView.setRepeatMode(LottieDrawable.RESTART);
                 animationView.setRepeatMode(mode);
                 break;
             case "pause":
@@ -181,9 +198,9 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
             case "setAutoReverseAnimation":
                 boolean reverse = ((args.get("reverse")) != null) ? Boolean.parseBoolean(args.get("reverse").toString()) : false;
                 if(reverse) {
-                    animationView.setRepeatMode(2);
+                    animationView.setRepeatMode(LottieDrawable.REVERSE);
                 } else {
-                    animationView.setRepeatMode(1);
+                    animationView.setRepeatMode(LottieDrawable.RESTART);
                 }
                 break;
             case "setAnimationProgress":
@@ -206,10 +223,10 @@ public class LottieView implements PlatformView, MethodChannel.MethodCallHandler
                 result.success((double)animationView.getSpeed());
                 break;
             case "getLoopAnimation":
-                result.success(animationView.getRepeatCount() == -1 ? true : false);
+                result.success(animationView.getRepeatCount() == -1);
                 break;
             case "getAutoReverseAnimation":
-                result.success(animationView.getRepeatMode() == 2 ? true : false);
+                result.success(animationView.getRepeatMode() == LottieDrawable.REVERSE);
                 break;
             case "setValue":
                 final String value = args.get("value").toString();

@@ -52,14 +52,17 @@ public class LottieView : NSObject, FlutterPlatformView {
          let loop = argsDict["loop"] as? Bool ?? false
          let reverse = argsDict["reverse"] as? Bool ?? false
          let autoPlay = argsDict["autoPlay"] as? Bool ?? false
-         
-         
+
          self.animationView?.loopAnimation = loop
          self.animationView?.autoReverseAnimation = reverse
          self.animationView?.completionBlock = completionBlock;
          if(autoPlay) {
             self.animationView?.play(completion: completionBlock);
          }
+
+         let scale = argsDict["scale"] as? CGFloat ?? 1.0
+         let translateX = argsDict["translateX"] as? CGFloat ?? 0.0
+         let translateY = argsDict["translateY"] as? CGFloat ?? 0.0
          
       }
       

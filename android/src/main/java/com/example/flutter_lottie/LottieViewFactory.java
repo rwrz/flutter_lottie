@@ -6,6 +6,8 @@ import io.flutter.plugin.platform.PlatformViewFactory;
 import io.flutter.plugin.common.StandardMessageCodec;
 import android.content.Context;
 
+import java.util.Map;
+
 public class LottieViewFactory extends PlatformViewFactory {
 
     private final Registrar mPluginRegistrar;
@@ -17,6 +19,6 @@ public class LottieViewFactory extends PlatformViewFactory {
 
     @Override
     public PlatformView create(Context context, int id, Object args) {
-        return new LottieView(context, id, args, mPluginRegistrar);
+        return new LottieView(context, id, (Map<String, Object>)args, mPluginRegistrar);
     }
 }
